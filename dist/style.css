@@ -1,0 +1,224 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+
+  display: grid;
+  gap: 2rem;
+  grid-template-areas:
+    "header"
+    "posts"
+    "main"
+    "footer";
+}
+
+body > header {
+  grid-area: header;
+}
+
+body > nav[aria-label="Posts"] {
+  grid-area: posts;
+}
+
+main {
+  grid-area: main;
+  min-width: 0;
+}
+
+body > footer {
+  grid-area: footer;
+}
+
+@media (min-width: 60rem) {
+  body {
+    padding: 2rem;
+    grid-template-columns: 16rem 1fr;
+    grid-template-areas:
+      "header header"
+      "posts  main"
+      "footer footer";
+  }
+
+  body > nav[aria-label="Posts"] {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+hgroup p {
+  margin: 0;
+}
+
+address {
+  font-style: normal;
+}
+
+a {
+  color: LinkText;
+  text-underline-offset: 0.2em;
+}
+
+a:visited {
+  color: VisitedText;
+}
+
+a:hover,
+a:focus-visible {
+  background-color: LinkText;
+  color: Canvas;
+}
+
+a:visited:hover,
+a:visited:focus-visible {
+  background-color: VisitedText;
+}
+
+nav ul,
+nav ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+header nav ul,
+footer nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+nav ol li + li {
+  margin-top: 0.5rem;
+}
+
+nav ol time {
+  display: block;
+  font-size: 0.875em;
+}
+
+article > * {
+  max-width: 70ch;
+}
+
+article + article {
+  margin-top: 4rem;
+}
+
+article:target {
+  outline: 2px solid currentColor;
+  outline-offset: 1rem;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: color-mix(in srgb, CanvasText 6%, Canvas);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figure {
+  margin-inline: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+main > section {
+  max-width: 50rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
+}
+
+main > section > h3 {
+  margin-top: 0;
+}
+
+table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 20rem;
+  max-width: 50rem;
+}
+
+th,
+td {
+  padding: 0.25rem 1rem 0.25rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  border-bottom: 2px solid color-mix(in srgb, CanvasText 35%, Canvas);
+}
+
+thead th:nth-child(1) {
+  width: 35%;
+}
+
+thead th:nth-child(2) {
+  width: 25%;
+}
+
+tbody tr:nth-child(even) {
+  background: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+td time {
+  font-variant-numeric: tabular-nums;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999rem;
+}
+
+a.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.5rem 1rem;
+
+  background: Canvas;
+  color: CanvasText;
+}
+
+@media print {
+  nav,
+  .skip-link {
+    display: none;
+  }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+  }
+}
