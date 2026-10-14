@@ -1,17 +1,11 @@
 {
   "name": "website",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "start": "pnpm build && pnpm run \"/^watch:/\"",
-    "watch:build": "node --watch build.mjs --watch",
-    "watch:serve": "live-server dist --wait=200 --no-css-inject"
+    "start": "node --watch build.mjs --watch"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -19,9 +13,5 @@
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@12.11.2",
-  "type": "module",
-  "dependencies": {
-    "live-server": "^1.2.2"
-  }
+  "packageManager": "pnpm@12.11.2"
 }

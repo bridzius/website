@@ -2,10 +2,15 @@ import { watch } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
+import { startDevServer } from "./serve.mjs";
+
 const sourceDirectory = "src";
 const postsDirectory = "posts";
 const outputDirectory = "dist";
 const feedPath = "feed.xml";
+const sitemapPath = "sitemap.xml";
+const robotsPath = "robots.txt";
+const staticFiles = ["style.css", "favicon.svg"];
 
 const siteName = "bridzius.lt";
 const siteUrl = "https://bridzius.lt";
@@ -13,6 +18,15 @@ const siteTagline = "opinions are my own";
 const siteDescription = "Personal ramblings of Jurgis.";
 const authorName = "Jurgis Bridžius";
 const firstPublishedYear = 2022;
+
+const author = {
+  "@type": "Person",
+  name: authorName,
+  url: `${siteUrl}/`,
+};
+
+const devServerHost = "127.0.0.1";
+const devServerPort = Number(process.env.PORT ?? 8080);
 
 const navigationLinks = [
   { href: "/", label: "blog" },
@@ -102,20 +116,8 @@ function requireFields(metadata, fieldNames, sourcePath) {
   );
 }
 
-// "2022-10-06" → "October 6th, 2022"
-function formatLongDate(isoDate) {
-  const date = new Date(isoDate);
-  const day = date.getUTCDate();
-  const month = date.toLocaleString("en-GB", {
-    month: "long",
-    timeZone: "UTC",
-  });
-
-  const isTeen = day >= 11 && day <= 13;
-  const suffixes = { 1: "st", 2: "nd", 3: "rd" };
-  const suffix = isTeen ? "th" : (suffixes[day % 10] ?? "th");
-
-  return `${month} ${day}${suffix}, ${date.getUTCFullYear()}`;
+function renderDate(isoDate) {
+  return `<time datetime="${isoDate}">${isoDate}</time>`;
 }
 
 // "2022-10-06" → "2022-10-06T00:00:00.000Z" (RFC 3339, as Atom requires)
@@ -133,7 +135,7 @@ async function loadPost(fileName) {
   const slug = basename(fileName, ".html");
   const url = `${siteUrl}/#${slug}`;
 
-  return { slug, body, metadata: { ...metadata, url } };
+  return { slug, body, metadata: { ...metadata, author, url } };
 }
 
 async function loadPosts() {
@@ -144,17 +146,23 @@ async function loadPosts() {
 
   const posts = await Promise.all(postFileNames.map(loadPost));
 
-  return posts.sort((first, second) =>
-    second.metadata.datePublished.localeCompare(first.metadata.datePublished),
-  );
+  return posts.sort((first, second) => {
+    const byDate = second.metadata.datePublished.localeCompare(
+      first.metadata.datePublished,
+    );
+
+    if (byDate !== 0) return byDate;
+
+    return first.slug.localeCompare(second.slug);
+  });
 }
 
 function renderPostListItem(post) {
   const { headline, datePublished } = post.metadata;
 
   return `<li>
-  <a href="#${post.slug}">${escapeHtml(headline)}</a>
-  <time datetime="${datePublished}">${datePublished}</time>
+  <a href="/#${post.slug}">${escapeHtml(headline)}</a>
+  ${renderDate(datePublished)}
 </li>`;
 }
 
@@ -165,7 +173,7 @@ function renderPostArticle(post) {
 ${indent(renderJsonLd(post.metadata), 2)}
   <header>
     <h2><a href="#${post.slug}">${escapeHtml(headline)}</a></h2>
-    <p><time datetime="${datePublished}">${formatLongDate(datePublished)}</time></p>
+    <p>${renderDate(datePublished)}</p>
   </header>
 ${indent(post.body, 2)}
   <footer><a href="#posts">Back to posts</a></footer>
@@ -182,16 +190,42 @@ function replaceMarker(body, markerName, content) {
 }
 
 function insertPosts(body, posts) {
-  const postList = posts.map(renderPostListItem).join("\n");
   const postArticles = posts.map(renderPostArticle).join("\n\n");
 
-  const bodyWithList = replaceMarker(body, "post-list", postList);
+  return replaceMarker(body, "post-articles", postArticles);
+}
 
-  return replaceMarker(bodyWithList, "post-articles", postArticles);
+function insertLastUpdated(body, metadata, sourcePath) {
+  const marker = "<!-- last-updated -->";
+
+  if (!body.includes(marker)) return body;
+
+  requireFields(metadata, ["dateModified"], sourcePath);
+
+  return body.replaceAll(marker, renderDate(metadata.dateModified));
+}
+
+function renderPostsNavigation(posts) {
+  const postList = posts.map(renderPostListItem).join("\n");
+
+  return `<nav aria-label="Posts" id="posts">
+  <h2>Posts</h2>
+  <ol reversed>
+${indent(postList, 4)}
+  </ol>
+</nav>`;
 }
 
 function lastUpdatedDate(post) {
   return post.metadata.dateModified ?? post.metadata.datePublished;
+}
+
+// A tag URI stays the same wherever the post ends up living. The year is
+// when the site's domain was first used, not when the post was written.
+function feedEntryId(post) {
+  const domain = new URL(siteUrl).hostname;
+
+  return `tag:${domain},${firstPublishedYear}:${post.slug}`;
 }
 
 function renderFeedEntry(post) {
@@ -203,7 +237,7 @@ function renderFeedEntry(post) {
 
   return `<entry>
   <title>${escapeHtml(headline)}</title>
-  <id>${url}</id>
+  <id>${feedEntryId(post)}</id>
   <link href="${url}" />
   <published>${toAtomTimestamp(datePublished)}</published>
   <updated>${toAtomTimestamp(lastUpdatedDate(post))}</updated>${summaryElement}
@@ -231,6 +265,43 @@ ${indent(feedEntries, 2)}
 `;
 }
 
+function renderSitemapEntry(page) {
+  const lastModifiedElement = page.lastModified
+    ? `\n  <lastmod>${page.lastModified}</lastmod>`
+    : "";
+
+  return `<url>
+  <loc>${page.url}</loc>${lastModifiedElement}
+</url>`;
+}
+
+function renderSitemap(pages) {
+  const entries = pages.map(renderSitemapEntry).join("\n");
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${indent(entries, 2)}
+</urlset>
+`;
+}
+
+function renderRobots() {
+  return `User-agent: *
+Allow: /
+
+Sitemap: ${siteUrl}/${sitemapPath}
+`;
+}
+
+// A page's own dateModified, or for the page listing posts, its newest post.
+function findLastModified(metadata, body, posts) {
+  if (metadata.dateModified) return metadata.dateModified;
+
+  if (!body.includes("<!-- post-articles -->")) return undefined;
+
+  return posts.map(lastUpdatedDate).sort().at(-1);
+}
+
 function renderJsonLd(metadata) {
   const json = JSON.stringify(metadata, null, 2).replaceAll("</", "<\\/");
 
@@ -256,6 +327,7 @@ function renderHead(metadata, urlPath) {
   <meta property="og:description" content="${description}" />
   <meta property="og:url" content="${metadata.url}" />
   <meta property="og:locale" content="en_GB" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="alternate" type="application/atom+xml" title="Feed" href="/${feedPath}" />
 ${indent(renderJsonLd(metadata), 2)}
@@ -296,13 +368,13 @@ function renderSiteFooter() {
     .join("\n");
 
   return `<footer>
-  <address>
-    <nav aria-label="Elsewhere">
+  <nav aria-label="Elsewhere">
+    <address>
       <ul>
 ${indent(elsewhereItems, 8)}
       </ul>
-    </nav>
-  </address>
+    </address>
+  </nav>
   <p>
     <small>
       © ${firstPublishedYear}–${currentYear} ${authorName}. Text licensed under
@@ -312,13 +384,14 @@ ${indent(elsewhereItems, 8)}
 </footer>`;
 }
 
-function renderPage({ metadata, body, urlPath }) {
+function renderPage({ metadata, body, urlPath, posts }) {
   return `<!doctype html>
 <html lang="en-GB">
 ${indent(renderHead(metadata, urlPath), 2)}
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
 ${indent(renderSiteHeader(urlPath), 4)}
+${indent(renderPostsNavigation(posts), 4)}
 ${indent(body, 4)}
 ${indent(renderSiteFooter(), 4)}
   </body>
@@ -333,18 +406,22 @@ async function buildPage(sourcePath, posts) {
   requireFields(metadata, ["name"], sourcePath);
 
   const urlPath = toUrlPath(sourcePath);
-  const pageMetadata = { ...metadata, url: siteUrl + urlPath };
+  const url = siteUrl + urlPath;
+  const pageMetadata = { ...metadata, author, url };
+  const lastModified = findLastModified(metadata, body, posts);
+
   const bodyWithPosts = insertPosts(body, posts);
+  const fullBody = insertLastUpdated(bodyWithPosts, metadata, sourcePath);
 
   const outputPath = join(outputDirectory, sourcePath);
 
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(
     outputPath,
-    renderPage({ metadata: pageMetadata, body: bodyWithPosts, urlPath }),
+    renderPage({ metadata: pageMetadata, body: fullBody, urlPath, posts }),
   );
 
-  return outputPath;
+  return { outputPath, url, lastModified };
 }
 
 function isPagePath(sourcePath) {
@@ -354,43 +431,45 @@ function isPagePath(sourcePath) {
   return isHtml && !isPost;
 }
 
-// Empties rather than deletes the directory, so live-server keeps watching it.
-async function clearOutputDirectory() {
-  await mkdir(outputDirectory, { recursive: true });
-
-  const entries = await readdir(outputDirectory);
-  const removals = entries.map((entry) =>
-    rm(join(outputDirectory, entry), { recursive: true, force: true }),
-  );
-
-  await Promise.all(removals);
-}
-
 async function build() {
-  await clearOutputDirectory();
+  await rm(outputDirectory, { recursive: true, force: true });
+  await mkdir(outputDirectory, { recursive: true });
 
   const posts = await loadPosts();
 
   const sourceFiles = await readdir(sourceDirectory, { recursive: true });
   const pagePaths = sourceFiles.filter(isPagePath);
 
+  const pages = [];
+
   for (const pagePath of pagePaths) {
-    const outputPath = await buildPage(pagePath, posts);
-    console.log(`built ${outputPath}`);
+    const page = await buildPage(pagePath, posts);
+
+    pages.push(page);
+    console.log(`built ${page.outputPath}`);
   }
 
-  const feedOutputPath = join(outputDirectory, feedPath);
+  const generatedFiles = [
+    [feedPath, renderFeed(posts)],
+    [sitemapPath, renderSitemap(pages)],
+    [robotsPath, renderRobots()],
+  ];
 
-  await writeFile(feedOutputPath, renderFeed(posts));
-  console.log(`built ${feedOutputPath}`);
+  for (const [fileName, contents] of generatedFiles) {
+    await writeFile(join(outputDirectory, fileName), contents);
+    console.log(`built ${join(outputDirectory, fileName)}`);
+  }
 
-  await cp("style.css", join(outputDirectory, "style.css"));
+  for (const fileName of staticFiles) {
+    await cp(fileName, join(outputDirectory, fileName));
+  }
 }
 
 const rebuildDelayInMilliseconds = 100;
-const watchedRootFiles = ["style.css"];
 
 const directoryWatchers = new Map();
+
+let devServer;
 
 let rebuildTimer;
 let isBuilding = false;
@@ -443,6 +522,7 @@ async function rebuild() {
 
   try {
     await build();
+    devServer.reload();
   } catch (error) {
     console.error(`build failed: ${error.message}`);
   }
@@ -459,10 +539,16 @@ async function rebuild() {
 }
 
 async function watchForChanges() {
+  devServer = startDevServer({
+    rootDirectory: outputDirectory,
+    host: devServerHost,
+    port: devServerPort,
+  });
+
   await rebuild();
 
   watch(".", (_eventType, fileName) => {
-    if (!watchedRootFiles.includes(fileName)) return;
+    if (!staticFiles.includes(fileName)) return;
 
     scheduleRebuild();
   });
