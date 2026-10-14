@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "start": "node --watch build.mjs --watch"
+    "build": "node build/build.mjs",
+    "start": "node --watch build/watch.mjs"
   },
   "devEngines": {
     "packageManager": {

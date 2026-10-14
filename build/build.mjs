@@ -1,16 +1,13 @@
-import { watch } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
-import { startDevServer } from "./serve.mjs";
-
-const sourceDirectory = "src";
+export const sourceDirectory = "src";
 const postsDirectory = "posts";
-const outputDirectory = "dist";
+export const outputDirectory = "dist";
 const feedPath = "feed.xml";
 const sitemapPath = "sitemap.xml";
 const robotsPath = "robots.txt";
-const staticFiles = ["style.css", "favicon.svg"];
+export const staticFiles = ["style.css", "favicon.svg"];
 
 const siteName = "bridzius.lt";
 const siteUrl = "https://bridzius.lt";
@@ -18,15 +15,13 @@ const siteTagline = "opinions are my own";
 const siteDescription = "Personal ramblings of Jurgis.";
 const authorName = "Jurgis Bridžius";
 const firstPublishedYear = 2022;
+const draftStatus = "Draft";
 
 const author = {
   "@type": "Person",
   name: authorName,
   url: `${siteUrl}/`,
 };
-
-const devServerHost = "127.0.0.1";
-const devServerPort = Number(process.env.PORT ?? 8080);
 
 const navigationLinks = [
   { href: "/", label: "blog" },
@@ -43,6 +38,9 @@ const elsewhereLinks = [
   },
   { href: `/${feedPath}`, label: "RSS" },
 ];
+
+const postArticlesMarker = "<!-- post-articles -->";
+const lastUpdatedMarker = "<!-- last-updated -->";
 
 const jsonLdPattern =
   /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
@@ -64,8 +62,7 @@ function indent(text, spaces) {
     .join("\n");
 }
 
-// src/things/index.html → "/things/"
-function toUrlPath(sourcePath) {
+function sourcePathToUrlPath(sourcePath) {
   return "/" + sourcePath.replace(/index\.html$/, "");
 }
 
@@ -120,8 +117,7 @@ function renderDate(isoDate) {
   return `<time datetime="${isoDate}">${isoDate}</time>`;
 }
 
-// "2022-10-06" → "2022-10-06T00:00:00.000Z" (RFC 3339, as Atom requires)
-function toAtomTimestamp(isoDate) {
+function toRfc3339Timestamp(isoDate) {
   return new Date(isoDate).toISOString();
 }
 
@@ -138,6 +134,20 @@ async function loadPost(fileName) {
   return { slug, body, metadata: { ...metadata, author, url } };
 }
 
+function isDraft(post) {
+  return post.metadata.creativeWorkStatus === draftStatus;
+}
+
+function compareNewestFirst(first, second) {
+  const byDate = second.metadata.datePublished.localeCompare(
+    first.metadata.datePublished,
+  );
+
+  if (byDate !== 0) return byDate;
+
+  return first.slug.localeCompare(second.slug);
+}
+
 async function loadPosts() {
   const fileNames = await readdir(join(sourceDirectory, postsDirectory));
   const postFileNames = fileNames.filter((fileName) =>
@@ -146,15 +156,13 @@ async function loadPosts() {
 
   const posts = await Promise.all(postFileNames.map(loadPost));
 
-  return posts.sort((first, second) => {
-    const byDate = second.metadata.datePublished.localeCompare(
-      first.metadata.datePublished,
-    );
+  for (const draft of posts.filter(isDraft)) {
+    console.log(`skipped draft ${draft.slug}`);
+  }
 
-    if (byDate !== 0) return byDate;
+  const publishedPosts = posts.filter((post) => !isDraft(post));
 
-    return first.slug.localeCompare(second.slug);
-  });
+  return publishedPosts.sort(compareNewestFirst);
 }
 
 function renderPostListItem(post) {
@@ -180,9 +188,8 @@ ${indent(post.body, 2)}
 </article>`;
 }
 
-// Replaces a marker comment, keeping the indentation of the line it sits on.
-function replaceMarker(body, markerName, content) {
-  const markerPattern = new RegExp(`^( *)<!-- ${markerName} -->$`, "m");
+function replaceMarkerLineKeepingIndentation(body, marker, content) {
+  const markerPattern = new RegExp(`^( *)${marker}$`, "m");
 
   return body.replace(markerPattern, (_line, padding) =>
     indent(content, padding.length),
@@ -192,17 +199,19 @@ function replaceMarker(body, markerName, content) {
 function insertPosts(body, posts) {
   const postArticles = posts.map(renderPostArticle).join("\n\n");
 
-  return replaceMarker(body, "post-articles", postArticles);
+  return replaceMarkerLineKeepingIndentation(
+    body,
+    postArticlesMarker,
+    postArticles,
+  );
 }
 
 function insertLastUpdated(body, metadata, sourcePath) {
-  const marker = "<!-- last-updated -->";
-
-  if (!body.includes(marker)) return body;
+  if (!body.includes(lastUpdatedMarker)) return body;
 
   requireFields(metadata, ["dateModified"], sourcePath);
 
-  return body.replaceAll(marker, renderDate(metadata.dateModified));
+  return body.replaceAll(lastUpdatedMarker, renderDate(metadata.dateModified));
 }
 
 function renderPostsNavigation(posts) {
@@ -220,9 +229,7 @@ function lastUpdatedDate(post) {
   return post.metadata.dateModified ?? post.metadata.datePublished;
 }
 
-// A tag URI stays the same wherever the post ends up living. The year is
-// when the site's domain was first used, not when the post was written.
-function feedEntryId(post) {
+function permanentTagUriForPost(post) {
   const domain = new URL(siteUrl).hostname;
 
   return `tag:${domain},${firstPublishedYear}:${post.slug}`;
@@ -237,17 +244,16 @@ function renderFeedEntry(post) {
 
   return `<entry>
   <title>${escapeHtml(headline)}</title>
-  <id>${feedEntryId(post)}</id>
+  <id>${permanentTagUriForPost(post)}</id>
   <link href="${url}" />
-  <published>${toAtomTimestamp(datePublished)}</published>
-  <updated>${toAtomTimestamp(lastUpdatedDate(post))}</updated>${summaryElement}
+  <published>${toRfc3339Timestamp(datePublished)}</published>
+  <updated>${toRfc3339Timestamp(lastUpdatedDate(post))}</updated>${summaryElement}
   <content type="html">${escapeHtml(post.body)}</content>
 </entry>`;
 }
 
 function renderFeed(posts) {
-  const updatedDates = posts.map(lastUpdatedDate).sort();
-  const feedUpdated = updatedDates.at(-1) ?? new Date().toISOString();
+  const feedUpdated = newestPostUpdate(posts) ?? new Date().toISOString();
 
   const feedEntries = posts.map(renderFeedEntry).join("\n");
 
@@ -258,7 +264,7 @@ function renderFeed(posts) {
   <id>${siteUrl}/</id>
   <link href="${siteUrl}/" />
   <link rel="self" type="application/atom+xml" href="${siteUrl}/${feedPath}" />
-  <updated>${toAtomTimestamp(feedUpdated)}</updated>
+  <updated>${toRfc3339Timestamp(feedUpdated)}</updated>
   <author><name>${authorName}</name></author>
 ${indent(feedEntries, 2)}
 </feed>
@@ -293,13 +299,18 @@ Sitemap: ${siteUrl}/${sitemapPath}
 `;
 }
 
-// A page's own dateModified, or for the page listing posts, its newest post.
-function findLastModified(metadata, body, posts) {
+function newestPostUpdate(posts) {
+  return posts.map(lastUpdatedDate).sort().at(-1);
+}
+
+function findPageLastModified(metadata, body, posts) {
   if (metadata.dateModified) return metadata.dateModified;
 
-  if (!body.includes("<!-- post-articles -->")) return undefined;
+  const listsPosts = body.includes(postArticlesMarker);
 
-  return posts.map(lastUpdatedDate).sort().at(-1);
+  if (!listsPosts) return undefined;
+
+  return newestPostUpdate(posts);
 }
 
 function renderJsonLd(metadata) {
@@ -405,10 +416,10 @@ async function buildPage(sourcePath, posts) {
 
   requireFields(metadata, ["name"], sourcePath);
 
-  const urlPath = toUrlPath(sourcePath);
+  const urlPath = sourcePathToUrlPath(sourcePath);
   const url = siteUrl + urlPath;
   const pageMetadata = { ...metadata, author, url };
-  const lastModified = findLastModified(metadata, body, posts);
+  const lastModified = findPageLastModified(metadata, body, posts);
 
   const bodyWithPosts = insertPosts(body, posts);
   const fullBody = insertLastUpdated(bodyWithPosts, metadata, sourcePath);
@@ -431,7 +442,7 @@ function isPagePath(sourcePath) {
   return isHtml && !isPost;
 }
 
-async function build() {
+export async function build() {
   await rm(outputDirectory, { recursive: true, force: true });
   await mkdir(outputDirectory, { recursive: true });
 
@@ -465,99 +476,6 @@ async function build() {
   }
 }
 
-const rebuildDelayInMilliseconds = 100;
-
-const directoryWatchers = new Map();
-
-let devServer;
-
-let rebuildTimer;
-let isBuilding = false;
-let hasPendingChanges = false;
-
-async function listSourceDirectories() {
-  const entries = await readdir(sourceDirectory, {
-    recursive: true,
-    withFileTypes: true,
-  });
-
-  const subdirectories = entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => join(entry.parentPath, entry.name));
-
-  return [sourceDirectory, ...subdirectories];
-}
-
-// Watches each directory on its own, because Node's recursive watcher on
-// Linux stops noticing a file once an editor has saved it by replacing it.
-async function watchSourceDirectories() {
-  const directories = await listSourceDirectories();
-
-  for (const directory of directories) {
-    if (directoryWatchers.has(directory)) continue;
-
-    const watcher = watch(directory, scheduleRebuild);
-
-    watcher.on("error", () => {
-      watcher.close();
-      directoryWatchers.delete(directory);
-    });
-
-    directoryWatchers.set(directory, watcher);
-  }
-}
-
-function scheduleRebuild() {
-  clearTimeout(rebuildTimer);
-  rebuildTimer = setTimeout(rebuild, rebuildDelayInMilliseconds);
-}
-
-async function rebuild() {
-  if (isBuilding) {
-    hasPendingChanges = true;
-    return;
-  }
-
-  isBuilding = true;
-
-  try {
-    await build();
-    devServer.reload();
-  } catch (error) {
-    console.error(`build failed: ${error.message}`);
-  }
-
-  // Picks up directories created since the last build.
-  await watchSourceDirectories();
-
-  isBuilding = false;
-
-  if (!hasPendingChanges) return;
-
-  hasPendingChanges = false;
-  scheduleRebuild();
-}
-
-async function watchForChanges() {
-  devServer = startDevServer({
-    rootDirectory: outputDirectory,
-    host: devServerHost,
-    port: devServerPort,
-  });
-
-  await rebuild();
-
-  watch(".", (_eventType, fileName) => {
-    if (!staticFiles.includes(fileName)) return;
-
-    scheduleRebuild();
-  });
-
-  console.log("watching for changes");
-}
-
-if (process.argv.includes("--watch")) {
-  await watchForChanges();
-} else {
+if (import.meta.main) {
   await build();
 }
