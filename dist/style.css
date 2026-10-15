@@ -198,6 +198,24 @@ td time {
   font-variant-numeric: tabular-nums;
 }
 
+dt {
+  margin-top: 1.25rem;
+  font-weight: bold;
+}
+
+dt:target {
+  outline: 2px solid currentColor;
+  outline-offset: 0.25rem;
+}
+
+dd {
+  margin-inline-start: 0;
+}
+
+dd > :first-child {
+  margin-top: 0.25rem;
+}
+
 .skip-link {
   position: absolute;
   left: -999rem;

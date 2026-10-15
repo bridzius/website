@@ -8,6 +8,7 @@ const feedPath = "feed.xml";
 const sitemapPath = "sitemap.xml";
 const robotsPath = "robots.txt";
 export const staticFiles = ["style.css", "favicon.svg"];
+const crawlerHiddenPaths = ["/stock-terms/"];
 
 const siteName = "bridzius.lt";
 const siteUrl = "https://bridzius.lt";
@@ -41,6 +42,17 @@ const elsewhereLinks = [
 
 const postArticlesMarker = "<!-- post-articles -->";
 const lastUpdatedMarker = "<!-- last-updated -->";
+
+const publishedPostFields = [
+  "@context",
+  "@type",
+  "headline",
+  "description",
+  "datePublished",
+  "dateModified",
+  "author",
+  "url",
+];
 
 const jsonLdPattern =
   /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
@@ -178,7 +190,7 @@ function renderPostArticle(post) {
   const { headline, datePublished } = post.metadata;
 
   return `<article id="${post.slug}">
-${indent(renderJsonLd(post.metadata), 2)}
+${indent(renderPostJsonLd(post.metadata), 2)}
   <header>
     <h2><a href="#${post.slug}">${escapeHtml(headline)}</a></h2>
     <p>${renderDate(datePublished)}</p>
@@ -291,8 +303,17 @@ ${indent(entries, 2)}
 `;
 }
 
+function isHiddenFromCrawlers(urlPath) {
+  return crawlerHiddenPaths.some((hiddenPath) => urlPath.startsWith(hiddenPath));
+}
+
 function renderRobots() {
+  const disallowLines = crawlerHiddenPaths
+    .map((hiddenPath) => `Disallow: ${hiddenPath}`)
+    .join("\n");
+
   return `User-agent: *
+${disallowLines}
 Allow: /
 
 Sitemap: ${siteUrl}/${sitemapPath}
@@ -313,8 +334,20 @@ function findPageLastModified(metadata, body, posts) {
   return newestPostUpdate(posts);
 }
 
-function renderJsonLd(metadata) {
-  const json = JSON.stringify(metadata, null, 2).replaceAll("</", "<\\/");
+function pickPublishedFields(metadata) {
+  const publishedEntries = Object.entries(metadata).filter(([fieldName]) =>
+    publishedPostFields.includes(fieldName),
+  );
+
+  return Object.fromEntries(publishedEntries);
+}
+
+function renderPostJsonLd(metadata) {
+  const publishedMetadata = pickPublishedFields(metadata);
+  const json = JSON.stringify(publishedMetadata, null, 2).replaceAll(
+    "</",
+    "<\\/",
+  );
 
   return `<script type="application/ld+json">\n${indent(json, 2)}\n</script>`;
 }
@@ -324,13 +357,17 @@ function renderHead(metadata, urlPath) {
   const pageTitle = isHomePage ? siteName : `${siteName} - ${metadata.name}`;
   const description = escapeHtml(metadata.description ?? "");
 
+  const robotsMeta = isHiddenFromCrawlers(urlPath)
+    ? `\n  <meta name="robots" content="noindex, nofollow" />`
+    : "";
+
   return `<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${description}" />
   <meta name="author" content="${authorName}" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="light dark" />${robotsMeta}
   <link rel="canonical" href="${metadata.url}" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="${siteName}" />
@@ -341,7 +378,6 @@ function renderHead(metadata, urlPath) {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="alternate" type="application/atom+xml" title="Feed" href="/${feedPath}" />
-${indent(renderJsonLd(metadata), 2)}
 </head>`;
 }
 
@@ -432,7 +468,7 @@ async function buildPage(sourcePath, posts) {
     renderPage({ metadata: pageMetadata, body: fullBody, urlPath, posts }),
   );
 
-  return { outputPath, url, lastModified };
+  return { outputPath, url, urlPath, lastModified };
 }
 
 function isPagePath(sourcePath) {
@@ -460,9 +496,13 @@ export async function build() {
     console.log(`built ${page.outputPath}`);
   }
 
+  const crawlablePages = pages.filter(
+    (page) => !isHiddenFromCrawlers(page.urlPath),
+  );
+
   const generatedFiles = [
     [feedPath, renderFeed(posts)],
-    [sitemapPath, renderSitemap(pages)],
+    [sitemapPath, renderSitemap(crawlablePages)],
     [robotsPath, renderRobots()],
   ];
 

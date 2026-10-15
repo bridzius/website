@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /stock-terms/
 Allow: /
 
 Sitemap: https://bridzius.lt/sitemap.xml
