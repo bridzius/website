@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bridzius.lt - Stock terms</title>
+    <meta name="description" content="Plain-language explanations of the swing-trading terms used in my stock scanner's emails." />
+    <meta name="author" content="Jurgis Bridžius" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href="https://bridzius.lt/stock-terms/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="bridzius.lt" />
+    <meta property="og:title" content="Stock terms" />
+    <meta property="og:description" content="Plain-language explanations of the swing-trading terms used in my stock scanner's emails." />
+    <meta property="og:url" content="https://bridzius.lt/stock-terms/" />
+    <meta property="og:locale" content="en_GB" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="alternate" type="application/atom+xml" title="Feed" href="/feed.xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header>
+      <hgroup>
+        <h1><a href="/">bridzius.lt</a></h1>
+        <p>opinions are my own</p>
+      </hgroup>
+      <nav aria-label="Site">
+        <ul>
+          <li><a href="/" aria-current="true">blog</a></li>
+          <li><a href="/things/">things</a></li>
+        </ul>
+      </nav>
+    </header>
+    <nav aria-label="Posts" id="posts">
+      <h2>Posts</h2>
+      <ol reversed>
+        <li>
+          <a href="/#distractions">Distractions</a>
+          <time datetime="2022-10-06">2022-10-06</time>
+        </li>
+      </ol>
+    </nav>
+    <main id="main">
+      <h2>Stock terms</h2>
+      <p>
+        Plain-language explanations of the words my swing-trading scanner uses
+        in its emails. Examples come from real scans. Not financial advice.
+        Last updated
+        <time datetime="2026-10-15">2026-10-15</time>.
+      </p>
+
+      <section aria-labelledby="the-trade-itself">
+        <h3 id="the-trade-itself">The trade itself</h3>
+        <dl>
+          <dt id="swing-trade">Swing trade</dt>
+          <dd>
+            <p>Buying something and holding it for a few days to two weeks (here: 2–10 trading days) to catch one short move. Not day trading, not long-term investing.</p>
+          </dd>
+          <dt id="long-only">Long-only</dt>
+          <dd>
+            <p>We only ever buy and hope the price goes up. No betting on prices falling (that&#39;s &quot;shorting&quot;, which Revolut doesn&#39;t allow for stocks).</p>
+          </dd>
+          <dt id="paper-trading">Paper trading</dt>
+          <dd>
+            <p>Pretend trading. Everything is simulated with fake money (€1,000) against real prices, to see whether the system works before risking real money.</p>
+          </dd>
+          <dt id="prediction">Prediction / idea / proposal</dt>
+          <dd>
+            <p>One suggested trade, with an exact buy price, stop and target. It gets an ID like <code>2026-10-15-UNH</code>.</p>
+          </dd>
+          <dt id="limit-order">Limit order / buy limit / entry</dt>
+          <dd>
+            <p>&quot;buy only if the price is at or below X&quot;. In the email, &quot;limit buy at 405 USD&quot; means: place an order on Revolut that only fills at 405 or cheaper. If the price never drops there, nothing happens.</p>
+          </dd>
+          <dt id="pending">Pending</dt>
+          <dd>
+            <p>A limit order that&#39;s been placed but hasn&#39;t been bought yet.</p>
+          </dd>
+          <dt id="fill">Fill / filled</dt>
+          <dd>
+            <p>The order actually got executed, so we now own the shares.</p>
+          </dd>
+          <dt id="valid-2-sessions">Valid 2 sessions</dt>
+          <dd>
+            <p>If the limit order hasn&#39;t filled after 2 trading days, cancel it. The setup is stale by then.</p>
+          </dd>
+          <dt id="session">Session</dt>
+          <dd>
+            <p>One trading day. Weekends and market holidays don&#39;t count.</p>
+          </dd>
+          <dt id="stop">Stop (stop-loss)</dt>
+          <dd>
+            <p>The price at which we admit we were wrong and sell, to cap the loss. UNH bought at 405 with a stop at 391 means: if it falls to 391, sell.</p>
+          </dd>
+          <dt id="target">Target</dt>
+          <dd>
+            <p>The price at which we take the profit and sell. UNH target 435.</p>
+          </dd>
+          <dt id="exit-by-n-sessions">Exit by N sessions / time exit</dt>
+          <dd>
+            <p>If neither the stop nor the target is hit after N trading days, sell anyway. The idea was a short-term move; if it hasn&#39;t happened, the reason we bought is gone.</p>
+          </dd>
+          <dt id="expired">Expired</dt>
+          <dd>
+            <p>A pending order that never filled within its 2 sessions. Not a loss, just a non-event.</p>
+          </dd>
+          <dt id="thesis">Thesis</dt>
+          <dd>
+            <p>The reason we think the price will go up. &quot;Post-earnings gap drift&quot; is a thesis.</p>
+          </dd>
+          <dt id="invalidation">Invalidation</dt>
+          <dd>
+            <p>Something you could observe that would prove the thesis wrong before the stop is hit, e.g. &quot;closes back below the breakout level&quot;. If it happens, close early.</p>
+          </dd>
+          <dt id="confidence">Confidence</dt>
+          <dd>
+            <p>An honest guess at the chance the trade hits its target before its stop. 0.50 is a coin flip. That&#39;s fine, because of R/R (below).</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="risk-and-money">
+        <h3 id="risk-and-money">Risk and money</h3>
+        <dl>
+          <dt id="r">R (risk unit)</dt>
+          <dd>
+            <p>How much money is lost if the stop is hit. With €1,000 and 4% risk per trade, 1R is about €40. Results are measured in R: &quot;+2R&quot; means we made twice what we risked; &quot;−1R&quot; means the stop was hit.</p>
+          </dd>
+          <dt id="r-r">R/R (reward/risk)</dt>
+          <dd>
+            <p>How far the target is compared to how far the stop is. UNH: buy 405, stop 391 (14 below), target 435 (30 above), so R/R = 30/14 ≈ 2.1. We require at least 2. At R/R 2, you only need to be right about 1 in 3 times to break even.</p>
+          </dd>
+          <dt id="position-size">Position size</dt>
+          <dd>
+            <p>How much money goes into one trade (e.g. ~€400). It&#39;s calculated so that hitting the stop loses about 4% of the account, not more.</p>
+          </dd>
+          <dt id="equity">Equity</dt>
+          <dd>
+            <p>What the account is worth right now: cash plus the current value of whatever we hold.</p>
+          </dd>
+          <dt id="drawdown">Drawdown</dt>
+          <dd>
+            <p>How far the account has fallen from its highest point. Peak €1,100, now €990: drawdown 10%. At 20% the system pauses.</p>
+          </dd>
+          <dt id="benchmark">Benchmark (VWCE.DE)</dt>
+          <dd>
+            <p>A cheap all-world index fund, the &quot;do nothing&quot; alternative. If the trading doesn&#39;t beat simply holding VWCE, it isn&#39;t worth the effort.</p>
+          </dd>
+          <dt id="win-rate">Win rate</dt>
+          <dd>
+            <p>The share of closed trades that made money.</p>
+          </dd>
+          <dt id="avg-r">Avg R</dt>
+          <dd>
+            <p>The average result per trade, in R. Above 0 means the system makes money on average.</p>
+          </dd>
+          <dt id="profit-factor">Profit factor</dt>
+          <dd>
+            <p>Total money made on winners divided by total money lost on losers. 1.0 means break-even; the go-live gate requires 1.3 or more.</p>
+          </dd>
+          <dt id="commission">Commission / fees</dt>
+          <dd>
+            <p>Revolut charges nothing for the first ~10 trades a month, then 0.25% (minimum €1) per trade.</p>
+          </dd>
+          <dt id="fx">FX</dt>
+          <dd>
+            <p>Currency exchange. Buying a US stock means converting EUR to USD; the &quot;EUR/USD 1.122&quot; number is how many dollars one euro buys.</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="the-market-overview-regime-section">
+        <h3 id="the-market-overview-regime-section">The market overview (&quot;Regime&quot; section)</h3>
+        <dl>
+          <dt id="regime">Regime</dt>
+          <dd>
+            <p>The overall mood of the market right now, which decides how picky to be.</p>
+            <ul>
+            <li><strong>Risk-on</strong>: investors are confident and buying; most stocks are rising. Easier to make money on longs.</li>
+            <li><strong>Risk-off</strong>: investors are scared and selling; most stocks are falling. Be very selective or sit out.</li>
+            <li><strong>Mixed</strong>: some of each, as on 2026-10-15.</li>
+            </ul>
+          </dd>
+          <dt id="spy">SPY, QQQ, IWM</dt>
+          <dd>
+            <p>Funds that track the big US indexes. SPY = the 500 largest US companies (S&amp;P 500), QQQ = big tech-heavy companies (Nasdaq 100), IWM = small US companies (Russell 2000). They&#39;re used as a thermometer for the US market.</p>
+          </dd>
+          <dt id="euro-stoxx">Euro Stoxx, DAX</dt>
+          <dd>
+            <p>The same idea for Europe: the 50 biggest eurozone companies, and the 40 biggest German ones.</p>
+          </dd>
+          <dt id="50d">50d / 200d (moving averages)</dt>
+          <dd>
+            <p>The average closing price over the last 50 or 200 trading days. Above the 50-day roughly means &quot;in a short-term uptrend&quot;; above the 200-day means &quot;in a long-term uptrend&quot;. &quot;Above 50/200d&quot; means both look healthy.</p>
+          </dd>
+          <dt id="vix">VIX</dt>
+          <dd>
+            <p>The market&#39;s &quot;fear gauge&quot;, based on how much protection investors are paying for. Under ~20 is calm, over ~30 is panic. A rising VIX is a warning sign even when it&#39;s still low.</p>
+          </dd>
+          <dt id="1d">1d / 5d / 20d / 60d</dt>
+          <dd>
+            <p>Price change over the last 1, 5, 20 or 60 trading days. &quot;QQQ −2.0% 1d, −3.8% 5d&quot; means down 2% today and 3.8% over the past week.</p>
+          </dd>
+          <dt id="sold-off">Sold off / selloff</dt>
+          <dd>
+            <p>Prices dropped sharply.</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="sectors">
+        <h3 id="sectors">Sectors</h3>
+        <dl>
+          <dt id="sector">Sector</dt>
+          <dd>
+            <p>A group of companies in the same business: Energy, Health Care, Tech, Financials, and so on.</p>
+          </dd>
+          <dt id="semis">Semis</dt>
+          <dd>
+            <p>Semiconductors, the chipmakers (Nvidia, AMD, ASML, …).</p>
+          </dd>
+          <dt id="defensive-sector">Defensive sector</dt>
+          <dd>
+            <p>Businesses people pay for no matter what (health care, utilities, food). Money tends to flow into them when investors get nervous. &quot;Defensive sector bid&quot; means buyers are moving into these.</p>
+          </dd>
+          <dt id="leaders">Leaders / laggards</dt>
+          <dd>
+            <p>The sectors currently doing best and worst compared to the overall market.</p>
+          </dd>
+          <dt id="rs">RS (relative strength)</dt>
+          <dd>
+            <p>How much better or worse something did than the market over a period. &quot;Energy +3.6pp (20d RS)&quot; means Energy beat the overall market by 3.6 percentage points over the last 20 trading days. RS is about outperforming the market, not just going up.</p>
+          </dd>
+          <dt id="pp">pp (percentage points)</dt>
+          <dd>
+            <p>The plain difference between two percentages. If a stock rose 5% and the market rose 2%, that&#39;s +3pp.</p>
+          </dd>
+          <dt id="sector-rotation">Sector rotation</dt>
+          <dd>
+            <p>Big investors moving money out of one sector and into another (e.g. out of tech, into energy). The strategy tries to ride the sector that money is flowing into.</p>
+          </dd>
+          <dt id="etf">ETF</dt>
+          <dd>
+            <p>A fund that trades like a single stock but holds many. XLE, for example, holds the main US energy companies.</p>
+          </dd>
+          <dt id="ucits">UCITS</dt>
+          <dd>
+            <p>The EU&#39;s rulebook for funds. EU retail investors can generally only buy UCITS-registered ETFs, so US ones like XLE or XLV usually aren&#39;t available on Revolut. The email then names a European equivalent (e.g. &quot;UCITS: IUES/XDW0&quot;) and says &quot;verify on Revolut&quot;.</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="strategies">
+        <h3 id="strategies">Strategies</h3>
+        <dl>
+          <dt id="momentum">Momentum</dt>
+          <dd>
+            <p>Buy what&#39;s already going up strongly, betting it keeps going for a bit. Things in motion tend to stay in motion.</p>
+          </dd>
+          <dt id="catalyst">Catalyst</dt>
+          <dd>
+            <p>Buy around a specific event that moves the price: usually an earnings report, but also news like an upgrade, a product launch or a deal. The catalyst is the trigger.</p>
+          </dd>
+          <dt id="mean-reversion">Mean-reversion</dt>
+          <dd>
+            <p>Buy something that fell too far, too fast, betting it bounces back toward its normal level. The opposite bet to momentum.</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="chart-and-signal-words">
+        <h3 id="chart-and-signal-words">Chart and signal words</h3>
+        <dl>
+          <dt id="breakout">Breakout</dt>
+          <dd>
+            <p>The price climbs above a level it had been stuck under, e.g. above its highest price of the last 20 days (&quot;20d high&quot;). Often the start of a new move up.</p>
+          </dd>
+          <dt id="retest">Retest</dt>
+          <dd>
+            <p>After a breakout, the price often dips back to the old ceiling to check it now acts as a floor. Buying the retest means buying that dip rather than chasing the high. OR.PA: broke out, so we wait for a dip to ~396–402.</p>
+          </dd>
+          <dt id="support">Support / resistance</dt>
+          <dd>
+            <p>A price level where the stock has repeatedly stopped falling (support, a floor) or stopped rising (resistance, a ceiling).</p>
+          </dd>
+          <dt id="swing-low">Swing low / swing high</dt>
+          <dd>
+            <p>A recent local bottom or top on the chart. A common place to put a stop: just below the last swing low.</p>
+          </dd>
+          <dt id="volume">Volume</dt>
+          <dd>
+            <p>How many shares changed hands. &quot;On volume&quot; or &quot;1.7x volume&quot; means 1.7 times the usual amount. High volume means a move has real conviction behind it; &quot;low volume (0.76x)&quot; means fewer people care.</p>
+          </dd>
+          <dt id="rsi">RSI (Relative Strength Index)</dt>
+          <dd>
+            <p>A 0–100 score of how fast the price has moved recently. Over 70 is &quot;overbought&quot; (ran up a lot, may be due a rest); under 30 is &quot;oversold&quot; (fell a lot, may bounce). Not the same as RS above.</p>
+          </dd>
+          <dt id="atr">ATR (Average True Range)</dt>
+          <dd>
+            <p>How much the price typically moves in one day. &quot;ATR 3.3%&quot; means a normal day moves it about 3.3%. Stops need to be wider than everyday noise, so they&#39;re often set around 2× ATR.</p>
+          </dd>
+          <dt id="extended">Extended / chasing / chase risk</dt>
+          <dd>
+            <p>The price has already run up a lot (e.g. XLE +6.7% in 5 days, RSI 71). Buying now means buying late, at the worst moment, just before a pullback.</p>
+          </dd>
+          <dt id="pullback">Pullback</dt>
+          <dd>
+            <p>A temporary dip within an uptrend. Often a better place to buy than the top.</p>
+          </dd>
+          <dt id="priced-in">Priced in</dt>
+          <dd>
+            <p>The good news is already reflected in the price. SAP up 57% in 60 days: whatever good news there is, people have already paid for it.</p>
+          </dd>
+          <dt id="earnings">Earnings</dt>
+          <dd>
+            <p>A company&#39;s quarterly results report. The single biggest scheduled price mover for a stock.</p>
+          </dd>
+          <dt id="gap">Gap / gap risk</dt>
+          <dd>
+            <p>The price opens far above or below the previous close, with no trading in between (usually after earnings or overnight news). A gap can jump straight past a stop, so the loss is bigger than planned. That&#39;s why we avoid holding through earnings unless the trade is about the earnings.</p>
+          </dd>
+          <dt id="post-earnings-drift">Post-earnings drift</dt>
+          <dd>
+            <p>After a strong earnings surprise, a stock often keeps drifting in the same direction for days or weeks as investors slowly catch up. A classic catalyst setup.</p>
+          </dd>
+          <dt id="score">Score</dt>
+          <dd>
+            <p>The screener&#39;s internal 0–10-ish rating of how strong a signal looks on the numbers alone. &quot;Weak signal (score 3.5)&quot; means the numbers weren&#39;t convincing.</p>
+          </dd>
+          <dt id="screen">Screen / screener</dt>
+          <dd>
+            <p>The script that scans ~150 stocks every run and picks out the handful worth a closer look (the candidates).</p>
+          </dd>
+          <dt id="universe">Universe</dt>
+          <dd>
+            <p>The full list of symbols the screener looks at.</p>
+          </dd>
+          <dt id="ticker">Ticker / symbol</dt>
+          <dd>
+            <p>A stock&#39;s short code. US stocks have none (UNH); European ones have an exchange suffix: <code>.PA</code> Paris, <code>.DE</code> Germany (Xetra), <code>.MC</code> Madrid, <code>.AS</code> Amsterdam, <code>.L</code> London.</p>
+          </dd>
+        </dl>
+      </section>
+
+      <section aria-labelledby="go-live-check-weekly-retro">
+        <h3 id="go-live-check-weekly-retro">Go-live check (weekly retro)</h3>
+        <dl>
+          <dt id="paper-gate">Paper gate</dt>
+          <dd>
+            <p>The four conditions that must all hold before real money is even suggested: enough history (4+ weeks, 15+ closed trades), beating VWCE after fees, profit factor ≥ 1.3, and drawdown staying under 20%.</p>
+          </dd>
+        </dl>
+      </section>
+    </main>
+    <footer>
+      <nav aria-label="Elsewhere">
+        <address>
+          <ul>
+            <li><a rel="me" href="https://github.com/bridzius">GitHub</a></li>
+            <li><a rel="me" href="https://fosstodon.org/@bridzius">Fosstodon</a></li>
+            <li><a rel="me" href="https://www.linkedin.com/in/bridzius">LinkedIn</a></li>
+            <li><a href="/feed.xml">RSS</a></li>
+          </ul>
+        </address>
+      </nav>
+      <p>
+        <small>
+          © 2022–2026 Jurgis Bridžius. Text licensed under
+          <a rel="license" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+        </small>
+      </p>
+    </footer>
+  </body>
+</html>
